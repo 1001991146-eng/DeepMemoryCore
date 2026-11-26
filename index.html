@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משימת חילוץ: ליבת הזיכרון העמוקה | Deep Memory Core</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts: Heebo & Fira Code -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Heebo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for crisp icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Heebo', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            bg: '#0F172A',
+                            card: 'rgba(30, 41, 59, 0.75)',
+                            cyan: '#06B6D4',
+                            magenta: '#EC4899',
+                            emerald: '#10B981',
+                            amber: '#F59E0B',
+                            red: '#EF4444'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0F172A;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.12) 0%, transparent 40%),
+                linear-gradient(to bottom, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.98));
+            color: #F8FAFC;
+            overflow-x: hidden;
+        }
+
+        /* Cyberpunk Grid Overlay */
+        .cyber-grid {
+            background-size: 36px 36px;
+            background-image: 
+                linear-gradient(to right, rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+        }
+
+        /* Tactical HUD Scanlines & Vignette */
+        .scanlines::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            z-index: 45;
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Tactical Chamfered Corner Cuts */
+        .hud-panel {
+            background: rgba(15, 23, 42, 0.84);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(6, 182, 212, 0.35);
+            box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.06), 0 10px 30px rgba(0, 0, 0, 0.6);
+            clip-path: polygon(0 12px, 12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px));
+        }
+
+        .hud-panel-alert {
+            background: rgba(24, 15, 30, 0.86);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(236, 72, 153, 0.45);
+            box-shadow: inset 0 0 25px rgba(236, 72, 153, 0.08), 0 10px 30px rgba(0, 0, 0, 0.6);
+            clip-path: polygon(0 12px, 12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px));
+        }
+
+        /* Caution Hazard Stripe */
+        .hazard-stripe {
+            background: repeating-linear-gradient(
+                -45deg,
+                rgba(245, 158, 11, 0.15),
+                rgba(245, 158, 11, 0.15) 10px,
+                rgba(15, 23, 42, 0.4) 10px,
+                rgba(15, 23, 42, 0.4) 20px
+            );
+        }
+
+        /* Glassmorphism Panel (Fallback/Modal) */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(6, 182, 212, 0.35);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+        }
+
+        .glass-panel-magenta {
+            background: rgba(22, 16, 34, 0.88);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(236, 72, 153, 0.45);
+            box-shadow: 0 8px 32px rgba(236, 72, 153, 0.18);
+        }
+
+        /* Neon Glow Effects */
+        .glow-cyan { box-shadow: 0 0 18px rgba(6, 182, 212, 0.45); }
+        .glow-magenta { box-shadow: 0 0 18px rgba(236, 72, 153, 0.45); }
+        .glow-emerald { box-shadow: 0 0 18px rgba(16, 185, 129, 0.45); }
+        .glow-amber { box-shadow: 0 0 18px rgba(245, 158, 11, 0.45); }
+        ::-webkit-scrollbar-thumb:hover { background: #06B6D4; }
+    </style>
+</head>
+<body class="min-h-screen cyber-grid scanlines flex flex-col justify-between selection:bg-cyan-500 selection:text-slate-900">
+
+    <!-- ==================== STORY INTRO / MISSION BRIEFING OVERLAY ==================== -->
+    <div id="intro-overlay" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto">
+        <div class="hud-panel max-w-3xl w-full p-6 sm:p-10 border-2 border-cyan-400/60 relative my-auto">
+            <!-- Top Tactical Telemetry Strip -->
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-500/30 pb-3 mb-6 text-xs font-mono">
+                <div class="flex items-center gap-2 text-red-400 font-bold">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                    <span>PRIORITY ALPHA // SYSTEM LOCKDOWN</span>
+                </div>
+                <span class="text-cyan-400">NODE: AETHER-9 CORE // DEPTH: -4096m</span>
+            </div>
+
+            <!-- Main Story Header -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+                <div class="w-16 h-16 rounded-2xl bg-red-500/15 border-2 border-red-500/60 flex items-center justify-center text-red-400 text-3xl shrink-0 shadow-lg">
+                    <i class="fa-solid fa-radiation animate-pulse"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-mono text-amber-400 tracking-widest uppercase mb-1">קריאת חירום // יחידת הסייבר</div>
+                    <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tight">
+                        משימת חילוץ: ליבת הזיכרון העמוקה
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Narrative Story Box -->
+            <div class="bg-slate-900/90 border-r-4 border-amber-400 p-4 sm:p-5 rounded-l-xl mb-6 space-y-3 text-slate-200 text-sm sm:text-base leading-relaxed">
+                <p>
+                    <strong class="text-amber-300">המצב בשטח:</strong> וירוס תוקף השתלט על מחשב-העל <strong class="text-cyan-300">"אתר-9"</strong> ונעל בתוכו את צוות המהנדסים שלנו! מערכות הקירור מתחממות, ויש לנו רק כמה דקות לפרוץ פנימה ולחלץ אותם.
+                </p>
+                <p>
+                    כדי לפתוח את דלתות החירום מתוך הקוד, עליך להפעיל את <strong class="text-white">3 מנגנוני הזיכרון של המעבד</strong>:
+                </p>
+            </div>
+
+            <!-- 3 Mission Objectives Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                <div class="bg-slate-900/80 border border-cyan-500/40 p-3.5 rounded-xl">
+                    <div class="text-xs font-mono text-cyan-400 font-bold mb-1">שלב 1 // שער הכניסה</div>
+                    <div class="font-bold text-white text-sm mb-1">פינוי התור ברשת (Queue)</div>
+                    <p class="text-xs text-slate-300 leading-relaxed">חבילות מידע חוסמות את הקו. נשחרר אותן לפי התור ("ראשון נכנס – ראשון יוצא") כדי לפתוח מעבר.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-pink-500/40 p-3.5 rounded-xl">
+                    <div class="text-xs font-mono text-pink-400 font-bold mb-1">שלב 2 // ירידה לעומק</div>
+                    <div class="font-bold text-white text-sm mb-1">צלילה רקורסיבית (Call Stack)</div>
+                    <p class="text-xs text-slate-300 leading-relaxed">נרד לתוך זיכרון המחשב כדי להגיע לכספת, ונעצור בדיוק בזמן (Base Case) כדי שהמחשב לא יקרוס.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-emerald-500/40 p-3.5 rounded-xl">
+                    <div class="text-xs font-mono text-emerald-400 font-bold mb-1">שלב 3 // פתיחת הדלתות</div>
+                    <div class="font-bold text-white text-sm mb-1">הרכבת קוד החילוץ (Return)</div>
+                    <p class="text-xs text-slate-300 leading-relaxed">נאסוף את המספרים מכל קומה בדרך חזרה למעלה ונרכיב את הסיסמה שתשחרר את הצוות.</p>
+                </div>
+            </div>
+
+            <!-- Difficulty Selector (UDL Differentiated Pathways) -->
+            <div class="mb-6">
+                <div class="text-xs font-bold text-cyan-300 uppercase tracking-wider mb-2.5 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>בחר/י מסלול קושי מותאם אישית (ניתן להחליף בכל שלב):</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="intro-difficulty-cards">
+                    <button onclick="setDifficulty('support')" id="intro-diff-support" class="p-3.5 rounded-xl border-2 border-slate-700 bg-slate-900/90 hover:border-emerald-400 text-right transition-all cursor-pointer">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-black text-emerald-400 text-sm">מתקשים מאוד (מודרך)</span>
+                            <i class="fa-solid fa-hand-holding-heart text-emerald-400"></i>
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">הנחיה צעד-אחר-צעד, הדגשת הכפתור הנכון, 3 חבילות ועומק רקורסיה 3 ללא הרכבת קוד מוקדמת.</p>
+                    </button>
+
+                    <button onclick="setDifficulty('standard')" id="intro-diff-standard" class="p-3.5 rounded-xl border-2 border-cyan-400 bg-cyan-950/40 text-right transition-all cursor-pointer glow-cyan">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-black text-cyan-300 text-sm">רגיל (רמת בגרות)</span>
+                            <i class="fa-solid fa-shield-halved text-cyan-400"></i>
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">סידור 4 שורות קוד ב-Java, ניהול תור של 4 חבילות, רקורסיה בעומק 4 וחישוב ערכי החזרה.</p>
+                    </button>
+
+                    <button onclick="setDifficulty('hardcore')" id="intro-diff-hardcore" class="p-3.5 rounded-xl border-2 border-slate-700 bg-slate-900/90 hover:border-pink-400 text-right transition-all cursor-pointer">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-black text-pink-400 text-sm">חזקים מאוד (אתגר על)</span>
+                            <i class="fa-solid fa-fire-flame-curved text-pink-400"></i>
+                        </div>
+                        <p class="text-[11px] text-slate-300 leading-relaxed">אלגוריתם סינון תור (5 שורות קוד), סינון חבילות רעש (NOISE), עומק 5 ונוסחה רקורסיבית מורכבת.</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Launch Button -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-800">
+                <button onclick="openBriefingModal()" class="hidden">Placeholder</button>
+                <div class="text-xs text-slate-400 flex items-center gap-2">
+                    <i class="fa-solid fa-headphones text-cyan-400"></i>
+                    <span>מומלץ להפעיל שמע לחיווי מכשירי בקרה בזמן אמת</span>
+                </div>
+                <button onclick="startMission()" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-l from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-base sm:text-lg transition-all glow-cyan flex items-center justify-center gap-3 shadow-xl cursor-pointer">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    <span>התחל משימת חילוץ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== HEADER BAR (TACTICAL HUD) ==================== -->
+    <header class="bg-slate-950/90 backdrop-blur-md sticky top-0 z-40 border-b-2 border-cyan-500/40 px-4 py-2.5 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand / Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-cyan-500/15 border border-cyan-400 flex items-center justify-center text-cyan-400 glow-cyan relative">
+                    <i class="fa-solid fa-shield-virus text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping"></span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base sm:text-lg font-black tracking-tight text-white">
+                            משימת חילוץ: ליבת הזיכרון
+                        </h1>
+                        <span class="hidden sm:inline-block text-[10px] font-mono bg-red-500/20 text-red-300 border border-red-500/40 px-1.5 py-0.5 rounded">
+                            LIVE RESCUE
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-cyan-400/80 font-mono">UNIT: AETHER-9 // DEEP MEMORY RECOVERY</p>
+                </div>
+            </div>
+
+            <!-- Level Progress Pills -->
+            <div class="flex items-center gap-1.5 bg-slate-900/95 p-1.5 rounded-xl border border-cyan-500/30">
+                <button onclick="switchLevel(1)" id="nav-lvl-1" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 bg-cyan-500 text-slate-950 shadow">
+                    <span>01. חוצץ רשת</span>
+                </button>
+                <button onclick="switchLevel(2)" id="nav-lvl-2" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 text-slate-400 hover:text-white">
+                    <i id="lock-lvl-2" class="fa-solid fa-lock text-xs"></i>
+                    <span>02. צלילת מחסנית</span>
+                </button>
+                <button onclick="switchLevel(3)" id="nav-lvl-3" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 text-slate-400 hover:text-white">
+                    <i id="lock-lvl-3" class="fa-solid fa-lock text-xs"></i>
+                    <span>03. קיפול ערכים</span>
+                </button>
+            </div>
+
+            <!-- Action Controls: Integrity, Difficulty, Story Replay, Sound & Teacher Dashboard -->
+            <div class="flex items-center gap-2">
+                <!-- Quick Difficulty Switcher -->
+                <div class="flex items-center bg-slate-900/95 border border-slate-700 rounded-xl p-1 text-xs font-bold">
+                    <button onclick="setDifficulty('support')" id="hdr-diff-support" class="px-2 py-1 rounded-lg text-slate-400 hover:text-emerald-300 transition-all" title="מסלול מודרך למתקשים מאוד">מודרך</button>
+                    <button onclick="setDifficulty('standard')" id="hdr-diff-standard" class="px-2 py-1 rounded-lg bg-cyan-500 text-slate-950 transition-all" title="מסלול רגיל">רגיל</button>
+                    <button onclick="setDifficulty('hardcore')" id="hdr-diff-hardcore" class="px-2 py-1 rounded-lg text-slate-400 hover:text-pink-300 transition-all" title="מסלול אתגר לחזקים מאוד">אתגר</button>
+                </div>
+
+                <!-- Lives (Hearts) & Score HUD -->
+                <div id="hud-stats-box" class="flex items-center gap-2.5 bg-slate-900/95 border border-pink-500/40 px-3 py-1.5 rounded-xl transition-all">
+                    <div class="flex items-center gap-1" title="חיים שנותרו">
+                        <span class="hidden md:inline text-xs text-slate-400 ml-1">חיים:</span>
+                        <div id="lives-display" class="flex items-center gap-1 text-sm sm:text-base"></div>
+                    </div>
+                    <span class="text-slate-700">|</span>
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                        <span class="hidden md:inline text-xs text-slate-400">ניקוד:</span>
+                        <span id="score-display" class="font-mono font-black text-cyan-400 text-sm sm:text-base">0</span>
+                    </div>
+                </div>
+
+                <!-- Re-open Story Briefing -->
+                <button onclick="showIntroOverlay()" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-400 text-amber-400 transition-all" title="צפה בסיפור הרקע ותדריך המשימה">
+                    <i class="fa-solid fa-book-journal-whills"></i>
+                </button>
+
+                <!-- Sound Toggle -->
+                <button id="sound-toggle" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400 text-cyan-400 transition-all" title="הפעל/השתק צלילים">
+                    <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+                </button>
+
+                <!-- Teacher Dashboard Toggle -->
+                <button onclick="toggleTeacherModal()" class="px-3 py-2 rounded-xl bg-pink-500/15 border border-pink-500/50 hover:bg-pink-500/25 text-pink-300 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all glow-magenta">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    <span class="hidden sm:inline">תצוגת מורה / פדגוגיה</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== ALERT / MESSAGE BANNER ==================== -->
+    <div id="status-banner" class="max-w-7xl w-full mx-auto px-4 mt-3 hidden">
+        <div id="status-banner-inner" class="p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all">
+            <div class="flex items-center gap-3">
+                <i id="status-icon" class="fa-solid fa-circle-info text-xl"></i>
+                <p id="status-text" class="text-sm font-semibold"></p>
+            </div>
+            <button onclick="hideBanner()" class="text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN WORKSPACE ==================== -->
+    <main class="max-w-7xl w-full mx-auto px-4 py-5 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- RIGHT COLUMN (7 cols on lg): Mission Narrative, Interactive Controls & Code Terminal -->
+        <div class="lg:col-span-7 flex flex-col gap-5">
+            
+            <!-- Mission Briefing Card (Tactical HUD) -->
+            <section class="hud-panel p-5 border-r-4 border-r-amber-400 relative">
+                <div class="hazard-stripe absolute top-0 left-0 right-0 h-1.5 opacity-70"></div>
+                <div class="flex items-center justify-between mb-2 mt-1">
+                    <span id="level-badge" class="text-xs font-mono uppercase tracking-wider px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                        SECTOR 01 // FIFO BUFFER
+                    </span>
+                    <span id="step-indicator" class="text-xs font-mono text-cyan-400">יעד חילוץ 1 מתוך 3</span>
+                </div>
+                <h2 id="mission-title" class="text-xl sm:text-2xl font-black text-white mb-2">
+                    שלב 1: יישור חוצץ הרשת (Queue FIFO)
+                </h2>
+                <p id="mission-desc" class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                    השרת המרכזי מותקף! חבילות מידע מוצפנות זורמות לתוך תור הקליטה (<code class="text-cyan-400 font-mono">Queue</code>). עליך לעבד אותן בסדר קפדני של <strong class="text-cyan-300">ראשון נכנס, ראשון יוצא (FIFO)</strong> לפני שהחוצץ יעלה על גדותיו.
+                </p>
+            </section>
+
+            <!-- Interactive Level Control Deck -->
+            <section id="control-deck" class="hud-panel p-5 active-border">
+                <!-- Dynamic Level Controls Injected Here -->
+            </section>
+
+            <!-- Live Code Console Terminal -->
+            <section class="hud-panel overflow-hidden flex flex-col border border-cyan-500/30">
+                <div class="bg-slate-900/95 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span class="text-xs font-mono text-cyan-300 mr-2">RescueProtocolKernel.java</span>
+                    </div>
+                    <span class="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">JAVA // UNIT4 API</span>
+                </div>
+                    <span class="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">DEBUGGER ATTACHED</span>
+                </div>
+                
+                <!-- Code Snippet Display -->
+                <div class="p-4 bg-slate-950/95 font-mono text-xs sm:text-sm overflow-x-auto" dir="ltr">
+                    <pre id="code-display" class="text-slate-200 leading-relaxed"></pre>
+                </div>
+
+                <!-- Execution Console Log -->
+                <div class="bg-slate-900/95 border-t border-slate-800 p-3">
+                    <div class="text-xs font-mono text-slate-400 mb-1.5 flex items-center gap-1.5">
+                        <i class="fa-solid fa-terminal text-emerald-400"></i>
+                        <span>יומן שידור ומעקב מעבד (Telemetry Log):</span>
+                    </div>
+                    <div id="console-log" class="font-mono text-xs space-y-1 max-h-32 overflow-y-auto text-emerald-300 bg-slate-950/90 p-2.5 rounded-lg border border-slate-800" dir="ltr">
+                        <div>> Rescue link established with AETHER-9 Core...</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- LEFT COLUMN (5 cols on lg): Live Memory Visualizers -->
+        <div class="lg:col-span-5 flex flex-col gap-5">
+            
+            <!-- Live Memory Status Header -->
+            <div class="hud-panel p-4 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+                    <h3 class="font-bold text-base text-white">רדאר זיכרון חי (Core RAM)</h3>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-mono">
+                    <span class="text-cyan-400">FIFO: <b id="stat-queue-size">0</b>/<b id="stat-queue-max">4</b></span>
+                    <span class="text-slate-600">|</span>
+                    <span class="text-pink-400">STACK: <b id="stat-stack-depth">0</b>/<b id="stat-stack-max">4</b></span>
+                </div>
+            </div>
+
+            <!-- VISUALIZER 1: Network Packet Queue (FIFO) -->
+            <div id="queue-visualizer-card" class="hud-panel p-5 transition-all">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-right-arrow-left text-cyan-400"></i>
+                        <h4 class="font-bold text-sm text-cyan-300">תא קליטת חבילות — Queue (FIFO)</h4>
+                    </div>
+                    <span class="text-xs font-mono bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30">
+                        First-In, First-Out
+                    </span>
+                </div>
+
+                <!-- Direction Labels -->
+                <div class="flex justify-between text-[11px] font-mono text-slate-400 mb-1.5 px-1">
+                    <span class="text-emerald-400 font-bold"><i class="fa-solid fa-arrow-left"></i> ראש התור (q.head() / q.remove())</span>
+                    <span class="text-cyan-400 font-bold">סוף התור (q.insert(elem)) <i class="fa-solid fa-arrow-left"></i></span>
+                </div>
+
+                <!-- Visual Pipe Container -->
+                <div class="relative min-h-[88px] bg-slate-950/95 rounded-xl border-2 border-dashed border-cyan-500/40 p-3 flex items-center justify-start gap-2.5 overflow-x-auto" dir="ltr">
+                    <div id="queue-container" class="flex items-center gap-2.5 w-full">
+                        <!-- Queue items rendered dynamically -->
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">
+                    <i class="fa-solid fa-circle-info text-cyan-400 ml-1"></i>
+                    על פי ממשק הפיקוח (<code class="font-mono text-cyan-300">Queue&lt;T&gt;</code>): איברים נכנסים לסוף התור עם <code class="font-mono text-cyan-300">q.insert(x)</code> ונשלפים מראש התור עם <code class="font-mono text-emerald-300">q.remove()</code>.
+                </p>
+            </div>
+
+            <!-- VISUALIZER 2: Call Stack Tower (LIFO) -->
+            <div id="stack-visualizer-card" class="hud-panel-alert p-5 flex-grow flex flex-col justify-between transition-all">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-pink-400"></i>
+                            <h4 class="font-bold text-sm text-pink-300">מחסנית הקריאות — Stack&lt;T&gt; (LIFO)</h4>
+                        </div>
+                        <span class="text-xs font-mono bg-pink-950 text-pink-300 px-2 py-0.5 rounded border border-pink-500/30">
+                            Last-In, First-Out
+                        </span>
+                    </div>
+
+                    <div class="text-xs text-slate-400 mb-2 flex justify-between items-center">
+                        <span>ראש המחסנית (s.top())</span>
+                        <span id="stack-limit-label" class="font-mono text-amber-400 font-bold">סף קריסה: עומק 4</span>
+                    </div>
+
+                    <!-- Vertical Stack Tower -->
+                    <div id="stack-container" class="min-h-[260px] bg-slate-950/95 rounded-xl border-2 border-pink-500/35 p-3 flex flex-col-reverse justify-start gap-2 relative overflow-hidden">
+                        <!-- Base OS Frame -->
+                        <div class="w-full p-2.5 rounded-lg bg-slate-800/90 border border-slate-600 flex items-center justify-between text-xs font-mono" dir="ltr">
+                            <span class="text-slate-300 font-bold">public static void main(String[] args)</span>
+                            <span class="text-slate-400">ret_addr: 0x0000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span><i class="fa-solid fa-arrow-up text-pink-400 ml-1"></i> s.push(frame): קריאה רקורסיבית</span>
+                    <span><i class="fa-solid fa-arrow-down text-emerald-400 ml-1"></i> s.pop(): החזרת ערך (return)</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ==================== GAME OVER MODAL (OUT OF LIVES) ==================== -->
+    <div id="gameover-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full rounded-3xl p-6 sm:p-8 border-2 border-red-500 text-center shadow-2xl relative">
+            <div class="w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center mx-auto mb-4 text-red-400 text-4xl">
+                <i class="fa-solid fa-heart-crack animate-pulse"></i>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white mb-2">
+                נגמרו החיים! הליבה ננעלה
+            </h2>
+            <p class="text-slate-300 text-sm sm:text-base mb-5 leading-relaxed">
+                מערכת ההגנה של <strong class="text-red-400">אתר-9</strong> זיהתה יותר מדי שגיאות וניתקה את החיבור. אל דאגה — ניתן לאתחל את המשימה ולנסות שוב!
+            </p>
+            <div class="bg-slate-900/90 rounded-2xl p-4 mb-6 border border-slate-700 grid grid-cols-2 gap-3 text-center">
+                <div>
+                    <div class="text-xs text-slate-400">ניקוד שנצבר</div>
+                    <div id="gameover-score" class="text-xl font-black font-mono text-amber-400">0</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">שלב שהגעת אליו</div>
+                    <div id="gameover-level" class="text-xl font-black font-mono text-cyan-400">שלב 1</div>
+                </div>
+            </div>
+            <button onclick="resetGame()" class="w-full px-6 py-3.5 rounded-xl bg-gradient-to-l from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500 text-white font-black text-base transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>נסה שוב מהתחלה (מלא חיים)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== VICTORY MODAL ==================== -->
+    <div id="victory-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel max-w-lg w-full rounded-3xl p-6 sm:p-8 border-2 border-emerald-400 text-center glow-emerald relative">
+            <div class="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center mx-auto mb-4 text-emerald-400 text-4xl">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white mb-2">
+                ליבת הזיכרון חולצה בהצלחה!
+            </h2>
+            <p class="text-slate-300 text-sm sm:text-base mb-5 leading-relaxed">
+                עבודה יוצאת מן הכלל, סוכן סייבר! שלטת בהצלחה בעקרונות <strong class="text-cyan-400">תור (FIFO)</strong>, ניווט ב-<strong class="text-pink-400">מחסנית הקריאות (Call Stack)</strong>, עצירה ב-<strong class="text-amber-400">תנאי העצירה (Base Case)</strong> וקיפול ערכים חזרה ל-<code class="font-mono text-emerald-400">main()</code>.
+            </p>
+            <div class="bg-slate-900/90 rounded-2xl p-4 mb-6 border border-slate-700 grid grid-cols-3 gap-2 text-center">
+                <div>
+                    <div class="text-xs text-slate-400">ניקוד סופי</div>
+                    <div id="final-score" class="text-xl font-black font-mono text-emerald-400">1000</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">שגיאות Overflow</div>
+                    <div id="final-overflows" class="text-xl font-black font-mono text-pink-400">0</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">דיוק אלגוריתמי</div>
+                    <div id="final-accuracy" class="text-xl font-black font-mono text-cyan-400">100%</div>
+                </div>
+            </div>
+            <div class="flex flex-wrap justify-center gap-3">
+                <button onclick="resetGame()" class="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black transition-all shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>שחק שוב מהתחלה</span>
+                </button>
+                <button onclick="closeVictoryModal(); toggleTeacherModal();" class="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold border border-slate-600 transition-all">
+                    צפה בדוח פדגוגי
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TEACHER / PEDAGOGY DASHBOARD MODAL ==================== -->
+    <div id="teacher-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="glass-panel-magenta max-w-4xl w-full rounded-3xl p-6 sm:p-8 border border-pink-500/50 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-pink-500/20 border border-pink-400 flex items-center justify-center text-pink-400">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white">תצוגת מורה וניתוח פדגוגי (UDL & SAMR)</h2>
+                        <p class="text-xs text-slate-400">ניטור ביצועי לומד בזמן אמת ועקרונות עיצוב הוראה במדעי המחשב</p>
+                    </div>
+                </div>
+                <button onclick="toggleTeacherModal()" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Real-Time Student Telemetry -->
+            <div class="mb-6">
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-700">
+                        <div class="text-xs text-slate-400">מסלול קושי</div>
+                        <div id="stat-teacher-diff" class="text-base font-black text-cyan-400 mt-1">רגיל</div>
+                    </div>
+                    <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-700">
+                        <div class="text-xs text-slate-400">שלב נוכחי</div>
+                        <div id="stat-teacher-level" class="text-lg font-black text-white mt-1">שלב 1 / 3</div>
+                    </div>
+                    <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-700">
+                        <div class="text-xs text-slate-400">פעולות תקינות</div>
+                        <div id="stat-teacher-correct" class="text-lg font-black text-emerald-400 font-mono mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-700">
+                        <div class="text-xs text-slate-400">שגיאות לוגיקה / Overflow</div>
+                        <div id="stat-teacher-errors" class="text-lg font-black text-pink-400 font-mono mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-700">
+                        <div class="text-xs text-slate-400">זיהוי תנאי עצירה (Base Case)</div>
+                        <div id="stat-teacher-basecase" class="text-sm font-bold text-amber-400 mt-1.5">טרם נבדק</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pedagogical Frameworks: UDL & SAMR -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- UDL Card -->
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-cyan-500/30">
+                    <h4 class="font-bold text-cyan-300 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-universal-access"></i>
+                        <span>עיצוב אוניברסלי ללמידה (UDL)</span>
+                    </h4>
+                    <ul class="text-xs sm:text-sm text-slate-300 space-y-2 leading-relaxed">
+                        <li><strong class="text-white">ייצוג מרובה (Representation):</strong> שילוב בו-זמני של קוד Java בממשקי הפיקוח הרשמיים (<code class="font-mono text-xs">Queue&lt;T&gt;</code>, <code class="font-mono text-xs">Stack&lt;T&gt;</code>), סימולציה ויזואלית של מבני נתונים בזיכרון, וחיווי קולי לכל פעולת Push/Pop.</li>
+                        <li><strong class="text-white">מעורבות רגשית (Engagement):</strong> מסגור נרטיבי (Intrinsic Gamification) המעניק משמעות מוחשית למושגים מופשטים כמו מניעת גלישת מחסנית (<code class="font-mono text-xs">StackOverflowError</code>).</li>
+                        <li><strong class="text-white">פעולה והבעה (Action & Expression):</strong> התנסות פעילה בבניית לוגיקה לפי דרישות הבגרות, קבלת משוב מיידי מתקן וללא ענישה חוסמת.</li>
+                    </ul>
+                </div>
+
+                <!-- SAMR Card -->
+                <div class="bg-slate-900/80 p-4 rounded-2xl border border-pink-500/30">
+                    <h4 class="font-bold text-pink-300 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-rocket"></i>
+                        <span>מודל SAMR לשילוב טכנולוגיה</span>
+                    </h4>
+                    <ul class="text-xs sm:text-sm text-slate-300 space-y-2 leading-relaxed">
+                        <li><strong class="text-emerald-400">Redefinition (הגדרה מחדש):</strong> מעבר ממעקב סטטי על דף (Trace Table) לסביבת מעבדה אינטראקטיבית הממחישה בזמן אמת כתובות חזרה (<code class="font-mono text-xs">ret_addr</code>) וקיפול ערכים.</li>
+                        <li><strong class="text-cyan-400">Modification (עיצוב מחדש):</strong> התלמיד שולט בקצב הריצה של המחסנית ויכול לחוות באופן מבוקר מה קורה כששוכחים <code class="font-mono text-xs">Base Case</code> (Stack Overflow).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Curriculum Alignment -->
+            <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-700 text-xs sm:text-sm text-slate-300 space-y-3">
+                <div>
+                    <strong class="text-amber-400 block mb-1">התאמה לממשקי הפיקוח על הוראת מדעי המחשב (Java - שאלון 271):</strong>
+                    הסימולציה נותנת מענה ישיר לתפיסות שגויות נפוצות: הבחנה בין מבנה נתונים <span class="text-cyan-400 font-semibold">Queue&lt;T&gt; (FIFO)</span> עם הפעולות <code class="font-mono text-xs">insert, remove, head, isEmpty</code> לבין <span class="text-pink-400 font-semibold">Stack&lt;T&gt; (LIFO)</span> עם הפעולות <code class="font-mono text-xs">push, pop, top, isEmpty</code>, והבנת מנגנון הרקורסיה.
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800 font-mono text-xs" dir="ltr">
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-cyan-500/30 text-cyan-200">
+                        <div class="text-cyan-400 font-bold mb-1">// ממשק תור (Queue&lt;T&gt;)</div>
+                        <div>Queue&lt;T&gt; q = new Queue&lt;T&gt;();</div>
+                        <div>q.insert(T x); // הכנסה לסוף</div>
+                        <div>T x = q.remove(); // שליפה מהראש</div>
+                        <div>T x = q.head(); // הצצה לראש</div>
+                        <div>boolean b = q.isEmpty();</div>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-pink-500/30 text-pink-200">
+                        <div class="text-pink-400 font-bold mb-1">// ממשק מחסנית (Stack&lt;T&gt;)</div>
+                        <div>Stack&lt;T&gt; s = new Stack&lt;T&gt;();</div>
+                        <div>s.push(T x); // דחיפה לראש</div>
+                        <div>T x = s.pop(); // שליפה מהראש</div>
+                        <div>T x = s.top(); // הצצה לראש</div>
+                        <div>boolean b = s.isEmpty();</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="border-t border-slate-800/80 py-3 px-4 text-center text-xs text-slate-500">
+        <span>משימת חילוץ: ליבת הזיכרון העמוקה // סביבת למידה אינטראקטיבית למבני נתונים ורקורסיה</span>
+    </footer>
+
+    <!-- ==================== JAVASCRIPT ENGINE & AUDIO ==================== -->
+    <script>
+        // ==========================================
+        // 1. RETRO 8-BIT WEB AUDIO SYNTHESIZER
+        // ==========================================
+        class RetroAudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playClick() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.06);
+                gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.06);
+            }
+
+            playSuccess() {
+                if (!this.enabled) return;
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    const startTime = this.ctx.currentTime + idx * 0.07;
+                    osc.frequency.setValueAtTime(freq, startTime);
+                    gain.gain.setValueAtTime(0.12, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.22);
+                });
+            }
+
+            playError() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(75, this.ctx.currentTime + 0.35);
+                gain.gain.setValueAtTime(0.16, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.35);
+            }
+
+            playLevelUp() {
+                if (!this.enabled) return;
+                this.init();
+                const sweep = [330, 440, 554.37, 659.25, 880];
+                sweep.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    const start = this.ctx.currentTime + idx * 0.08;
+                    osc.frequency.setValueAtTime(freq, start);
+                    gain.gain.setValueAtTime(0.09, start);
+                    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(start);
+                    osc.stop(start + 0.25);
+                });
+            }
+        }
+
+        const audio = new RetroAudioEngine();
+
+        function toggleSound() {
+            audio.enabled = !audio.enabled;
+            const icon = document.getElementById('sound-icon');
+            if (audio.enabled) {
+                icon.className = 'fa-solid fa-volume-high';
+                audio.playClick();
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+            }
+        }
+
+        // ==========================================
+        // 2. GAME STATE & TELEMETRY
+        // ==========================================
+        const DIFFICULTY_CONFIG = {
+            support: {
+                id: 'support',
+                label: 'מתקשים מאוד (מודרך)',
+                shortLabel: 'מודרך',
+                skipCodePuzzle: true,
+                maxDepth: 3,
+                packets: [
+                    { id: 'SOS-01', payload: '0xA1', isNoise: false, color: 'border-cyan-400 text-cyan-300 bg-cyan-950/80' },
+                    { id: 'KEY-02', payload: '0xB4', isNoise: false, color: 'border-emerald-400 text-emerald-300 bg-emerald-950/80' },
+                    { id: 'EXT-03', payload: '0xF2', isNoise: false, color: 'border-pink-400 text-pink-300 bg-pink-950/80' }
+                ],
+                codeBlocks: []
+            },
+            standard: {
+                id: 'standard',
+                label: 'רגיל (רמת בגרות)',
+                shortLabel: 'רגיל',
+                skipCodePuzzle: false,
+                maxDepth: 4,
+                packets: [
+                    { id: 'SOS-01', payload: '0xA1', isNoise: false, color: 'border-cyan-400 text-cyan-300 bg-cyan-950/80' },
+                    { id: 'KEY-02', payload: '0xB4', isNoise: false, color: 'border-emerald-400 text-emerald-300 bg-emerald-950/80' },
+                    { id: 'MAP-03', payload: '0xC9', isNoise: false, color: 'border-amber-400 text-amber-300 bg-amber-950/80' },
+                    { id: 'EXT-04', payload: '0xF2', isNoise: false, color: 'border-pink-400 text-pink-300 bg-pink-950/80' }
+                ],
+                codeBlocks: [
+                    { id: 'c1', code: 'Queue<Packet> q = new Queue<Packet>();', order: 1, hint: 'יצירת תור ריק של חבילות מידע' },
+                    { id: 'c2', code: 'for (Packet pkt : incoming) q.insert(pkt);', order: 2, hint: 'קליטת החבילות מהרשת והכנסתן לתור' },
+                    { id: 'c3', code: 'while (!q.isEmpty()) {', order: 3, hint: 'לולאה כל עוד נותרו חבילות בתור' },
+                    { id: 'c4', code: '    Packet p = q.remove(); decrypt(p); }', order: 4, hint: 'שליפה זמנית ל-p, פיענוח ושחרור' }
+                ]
+            },
+            hardcore: {
+                id: 'hardcore',
+                label: 'חזקים מאוד (אתגר על)',
+                shortLabel: 'אתגר',
+                skipCodePuzzle: false,
+                maxDepth: 5,
+                packets: [
+                    { id: 'SOS-01', payload: 'VALID', isNoise: false, color: 'border-cyan-400 text-cyan-300 bg-cyan-950/80' },
+                    { id: 'NOISE-X', payload: 'CORRUPT', isNoise: true, color: 'border-red-500 text-red-300 bg-red-950/80' },
+                    { id: 'KEY-02', payload: 'VALID', isNoise: false, color: 'border-emerald-400 text-emerald-300 bg-emerald-950/80' },
+                    { id: 'NOISE-Y', payload: 'CORRUPT', isNoise: true, color: 'border-red-500 text-red-300 bg-red-950/80' },
+                    { id: 'EXT-03', payload: 'VALID', isNoise: false, color: 'border-pink-400 text-pink-300 bg-pink-950/80' }
+                ],
+                codeBlocks: [
+                    { id: 'h1', code: 'Queue<Packet> validQ = new Queue<Packet>();', order: 1, hint: 'יצירת תור עזר לחבילות תקינות בלבד' },
+                    { id: 'h2', code: 'while (!q.isEmpty()) {', order: 2, hint: 'סריקת כל החבילות שבתור הקלט' },
+                    { id: 'h3', code: '    Packet p = q.remove();', order: 3, hint: 'שליפת החבילה שבראש התור לבדיקה' },
+                    { id: 'h4', code: '    if (!p.isNoise()) { decrypt(p); validQ.insert(p); }', order: 4, hint: 'סינון רעש: פיענוח ושמירה רק של חבילה תקינה' },
+                    { id: 'h5', code: '} return validQ;', order: 5, hint: 'סגירת הלולאה והחזרת התור המסונן' }
+                ]
+            }
+        };
+
+        const state = {
+            difficulty: 'standard',
+            currentLevel: 1,
+            unlockedLevels: [1],
+            score: 0,
+            maxLives: 4,
+            lives: 4,
+            correctActions: 0,
+            errorCount: 0,
+            overflowCount: 0,
+            baseCaseIdentified: false,
+
+            // Level 1: Queue FIFO state
+            incomingPackets: [],
+            queue: [],
+            processedPackets: [],
+            discardedNoise: 0,
+            lvl1CodeStep: 0,
+            selectedCodeLines: [],
+
+            // Level 2: Call Stack Push state
+            stackFrames: [],
+            maxSafeDepth: 4,
+            targetN: 4,
+
+            // Level 3: Stack Unwinding & Return Values state
+            unwindFrames: [],
+            accumulatedResult: 1
+        };
+
+        function setDifficulty(diffKey, silent = false) {
+            if (!DIFFICULTY_CONFIG[diffKey]) return;
+            if (!silent) audio.playClick();
+            state.difficulty = diffKey;
+            const cfg = DIFFICULTY_CONFIG[diffKey];
+            state.maxSafeDepth = cfg.maxDepth;
+            state.targetN = cfg.maxDepth;
+            state.maxLives = diffKey === 'support' ? 5 : diffKey === 'hardcore' ? 3 : 4;
+            state.lives = state.maxLives;
+            renderLives();
+
+            // Update Intro Cards UI
+            ['support', 'standard', 'hardcore'].forEach(k => {
+                const introBtn = document.getElementById(`intro-diff-${k}`);
+                const hdrBtn = document.getElementById(`hdr-diff-${k}`);
+                if (introBtn) {
+                    if (k === diffKey) {
+                        const ringColor = k === 'support' ? 'border-emerald-400 bg-emerald-950/40 glow-emerald' : k === 'hardcore' ? 'border-pink-400 bg-pink-950/40 glow-magenta' : 'border-cyan-400 bg-cyan-950/40 glow-cyan';
+                        introBtn.className = `p-3.5 rounded-xl border-2 ${ringColor} text-right transition-all cursor-pointer`;
+                    } else {
+                        introBtn.className = 'p-3.5 rounded-xl border-2 border-slate-700 bg-slate-900/90 hover:border-slate-500 text-right transition-all cursor-pointer opacity-80';
+                    }
+                }
+                if (hdrBtn) {
+                    if (k === diffKey) {
+                        const activeBg = k === 'support' ? 'bg-emerald-500 text-slate-950' : k === 'hardcore' ? 'bg-pink-500 text-slate-950' : 'bg-cyan-500 text-slate-950';
+                        hdrBtn.className = `px-2 py-1 rounded-lg ${activeBg} transition-all`;
+                    } else {
+                        hdrBtn.className = 'px-2 py-1 rounded-lg text-slate-400 hover:text-white transition-all';
+                    }
+                }
+            });
+
+            // Update Stack Depth Labels
+            document.getElementById('stat-stack-max').textContent = cfg.maxDepth;
+            document.getElementById('stat-queue-max').textContent = cfg.packets.length;
+            const limitLabel = document.getElementById('stack-limit-label');
+            if (limitLabel) limitLabel.textContent = `סף קריסה: עומק ${cfg.maxDepth}`;
+
+            updateTeacherStats();
+            if (!silent) {
+                logConsole(`Difficulty switched to [${cfg.id.toUpperCase()}] (Max Depth: ${cfg.maxDepth}).`, 'warn');
+                if (state.currentLevel === 1) setupLevel1();
+                else if (state.currentLevel === 2) setupLevel2();
+                else if (state.currentLevel === 3) setupLevel3();
+            }
+        }
+
+        function showBanner(type, message) {
+            const banner = document.getElementById('status-banner');
+            const inner = document.getElementById('status-banner-inner');
+            const icon = document.getElementById('status-icon');
+            const text = document.getElementById('status-text');
+
+            if (!banner || !inner || !icon || !text) return;
+
+            banner.classList.remove('hidden');
+            text.textContent = message;
+
+            if (type === 'error') {
+                inner.className = 'p-3.5 rounded-xl border border-red-500/60 bg-red-950/90 text-red-200 flex items-center justify-between gap-3 transition-all shadow-lg';
+                icon.className = 'fa-solid fa-triangle-exclamation text-xl text-red-400 animate-pulse';
+            } else if (type === 'success') {
+                inner.className = 'p-3.5 rounded-xl border border-emerald-500/60 bg-emerald-950/90 text-emerald-200 flex items-center justify-between gap-3 transition-all shadow-lg';
+                icon.className = 'fa-solid fa-circle-check text-xl text-emerald-400';
+            } else {
+                inner.className = 'p-3.5 rounded-xl border border-cyan-500/60 bg-cyan-950/90 text-cyan-200 flex items-center justify-between gap-3 transition-all shadow-lg';
+                icon.className = 'fa-solid fa-circle-info text-xl text-cyan-400';
+            }
+        }
+
+        function hideBanner() {
+            const banner = document.getElementById('status-banner');
+            if (banner) banner.classList.add('hidden');
+        }
+
+        function logConsole(message, type = 'info') {
+            const logEl = document.getElementById('console-log');
+            if (!logEl) return;
+            const line = document.createElement('div');
+            if (type === 'error') line.className = 'text-red-400 font-bold';
+            else if (type === 'success') line.className = 'text-emerald-400';
+            else if (type === 'warn') line.className = 'text-amber-400';
+            else line.className = 'text-cyan-300';
+            line.textContent = `> ${message}`;
+            logEl.appendChild(line);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function renderLives() {
+            const container = document.getElementById('lives-display');
+            if (!container) return;
+            let html = '';
+            for (let i = 1; i <= state.maxLives; i++) {
+                if (i <= state.lives) {
+                    html += `<i class="fa-solid fa-heart text-pink-500 drop-shadow-[0_0_6px_rgba(236,72,153,0.7)] transition-all"></i>`;
+                } else {
+                    html += `<i class="fa-regular fa-heart text-slate-600 opacity-50 transition-all"></i>`;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function loseLife(reasonMsg = '') {
+            state.lives = Math.max(0, state.lives - 1);
+            renderLives();
+
+            const hudBox = document.getElementById('hud-stats-box');
+            if (hudBox) {
+                hudBox.classList.add('border-red-500', 'bg-red-950/60', 'scale-105');
+                setTimeout(() => hudBox.classList.remove('border-red-500', 'bg-red-950/60', 'scale-105'), 450);
+            }
+
+            if (state.lives === 0) {
+                document.getElementById('gameover-score').textContent = state.score;
+                document.getElementById('gameover-level').textContent = `שלב ${state.currentLevel}`;
+                document.getElementById('gameover-modal').classList.remove('hidden');
+                logConsole(`SYSTEM LOCKDOWN: All lives depleted! ${reasonMsg}`, 'error');
+            }
+        }
+
+        function updateScore(points) {
+            state.score = Math.max(0, state.score + points);
+            const scoreEl = document.getElementById('score-display');
+            if (scoreEl) {
+                scoreEl.textContent = state.score;
+                if (points > 0) {
+                    scoreEl.classList.add('text-emerald-300', 'scale-110');
+                    setTimeout(() => scoreEl.classList.remove('text-emerald-300', 'scale-110'), 300);
+                }
+            }
+            updateTeacherStats();
+        }
+
+        function updateTeacherStats() {
+            const cfg = DIFFICULTY_CONFIG[state.difficulty];
+            const diffEl = document.getElementById('stat-teacher-diff');
+            if (diffEl) diffEl.textContent = cfg.shortLabel;
+            document.getElementById('stat-teacher-level').textContent = `שלב ${state.currentLevel} / 3`;
+            document.getElementById('stat-teacher-correct').textContent = state.correctActions;
+            document.getElementById('stat-teacher-errors').textContent = state.errorCount;
+            document.getElementById('stat-teacher-basecase').textContent = state.baseCaseIdentified ? 'זוהה בהצלחה ✓' : 'בתהליך למידה...';
+        }
+
+        function renderQueueVisualizer() {
+            const container = document.getElementById('queue-container');
+            document.getElementById('stat-queue-size').textContent = state.queue.length;
+            container.innerHTML = '';
+
+            if (state.queue.length === 0) {
+                container.innerHTML = `<div class="w-full text-center text-xs font-mono text-slate-500 py-3">[ BUFFER EMPTY - ממתין לחבילות מידע ]</div>`;
+                return;
+            }
+
+            state.queue.forEach((pkt, index) => {
+                const el = document.createElement('div');
+                const isFront = index === 0;
+                el.className = `packet-enter min-w-[82px] p-2 rounded-lg border-2 ${pkt.color} flex flex-col items-center justify-center relative shrink-0 ${isFront ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-950' : ''}`;
+                el.innerHTML = `
+                    ${isFront ? '<span class="absolute -top-2.5 bg-emerald-500 text-slate-950 text-[9px] font-black px-1.5 rounded">q.head()</span>' : ''}
+                    <span class="font-mono font-bold text-xs">${pkt.id}</span>
+                    <span class="font-mono text-[10px] opacity-80">${pkt.payload}</span>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function renderStackVisualizer(framesList, isUnwindMode = false) {
+            const container = document.getElementById('stack-container');
+            document.getElementById('stat-stack-depth').textContent = framesList.length;
+
+            // Keep base OS frame at bottom
+            container.innerHTML = `
+                <div class="w-full p-2.5 rounded-lg bg-slate-800/90 border border-slate-600 flex items-center justify-between text-xs font-mono" dir="ltr">
+                    <span class="text-slate-300 font-bold">main(String[] args)</span>
+                    <span class="text-slate-400">ret_addr: 0x0000</span>
+                </div>
+            `;
+
+            framesList.forEach((frame, index) => {
+                const isTop = index === framesList.length - 1;
+                const el = document.createElement('div');
+                
+                let borderStyle = isTop 
+                    ? 'border-pink-400 bg-pink-950/70 glow-magenta' 
+                    : 'border-slate-600 bg-slate-900/90 opacity-85';
+                
+                if (frame.isBaseCase) {
+                    borderStyle = 'border-amber-400 bg-amber-950/80 shadow-lg';
+                }
+
+                el.className = `stack-frame-enter w-full p-3 rounded-xl border-2 ${borderStyle} flex flex-col gap-1 font-mono text-xs transition-all`;
+                el.setAttribute('dir', 'ltr');
+                
+                el.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-sm ${frame.isBaseCase ? 'text-amber-300' : 'text-pink-300'}">
+                            ${frame.funcName}
+                        </span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isTop ? 'bg-pink-500 text-slate-950' : 'bg-slate-800 text-slate-400'}">
+                            ${isTop ? 's.top() [HEAD]' : `DEPTH ${frame.depth}`}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] text-slate-300 mt-1">
+                        <span>local: <b class="text-cyan-300">${frame.localVar}</b></span>
+                        <span>ret_addr: <b class="text-slate-400">${frame.retAddr}</b></span>
+                    </div>
+                    ${isUnwindMode ? `
+                        <div class="mt-1 pt-1 border-t border-slate-700/80 flex items-center justify-between text-[11px]">
+                            <span class="text-emerald-400">expr: ${frame.expression}</span>
+                            <span class="text-amber-300 font-bold">${frame.returnVal !== null ? 'return ' + frame.returnVal : 'waiting...'}</span>
+                        </div>
+                    ` : ''}
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // ==========================================
+        // 4. LEVEL CONTROLLERS
+        // ==========================================
+        function switchLevel(lvl) {
+            if (!state.unlockedLevels.includes(lvl)) {
+                audio.playError();
+                showBanner('error', `שלב ${lvl} עדיין נעול! השלם את השלב הנוכחי כדי לפתוח גישה.`);
+                return;
+            }
+            audio.playClick();
+            hideBanner();
+            state.currentLevel = lvl;
+            updateNavPills();
+            updateTeacherStats();
+
+            if (lvl === 1) setupLevel1();
+            else if (lvl === 2) setupLevel2();
+            else if (lvl === 3) setupLevel3();
+        }
+
+        function updateNavPills() {
+            [1, 2, 3].forEach(n => {
+                const btn = document.getElementById(`nav-lvl-${n}`);
+                const lock = document.getElementById(`lock-lvl-${n}`);
+                if (!btn) return;
+                if (lock) {
+                    lock.style.display = state.unlockedLevels.includes(n) ? 'none' : 'inline-block';
+                }
+                if (state.currentLevel === n) {
+                    btn.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 bg-cyan-500 text-slate-950 shadow glow-cyan';
+                } else if (state.unlockedLevels.includes(n)) {
+                    btn.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 bg-slate-800 text-emerald-400 hover:bg-slate-700';
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 text-slate-500 cursor-not-allowed';
+                }
+            });
+        }
+
+        // ------------------------------------------
+        // LEVEL 1: NETWORK BUFFER ALIGNMENT (QUEUE FIFO)
+        // ------------------------------------------
+        function setupLevel1() {
+            const cfg = DIFFICULTY_CONFIG[state.difficulty];
+            state.incomingPackets = cfg.packets.map(p => ({ ...p }));
+            state.queue = [];
+            state.processedPackets = [];
+            state.discardedNoise = 0;
+            state.lvl1CodeStep = cfg.skipCodePuzzle ? 1 : 0;
+            state.selectedCodeLines = [];
+
+            document.getElementById('level-badge').textContent = `שלב 1 // תור Queue<T> [${cfg.shortLabel}]`;
+            document.getElementById('step-indicator').textContent = 'משימה 1 מתוך 3';
+
+            if (state.difficulty === 'support') {
+                document.getElementById('mission-title').textContent = 'שלב 1 (מסלול מודרך): הכנסה ושליפה מהתור';
+                document.getElementById('mission-desc').innerHTML = `
+                    במסלול המודרך הכנו עבורך את הקוד מראש! לפנינו <strong class="text-cyan-300">3 חבילות מידע</strong>.
+                    <br><span class="text-emerald-300 font-semibold">כלל הזהב:</span> תור עובד כמו תור בסופר — <strong>ראשון נכנס, ראשון יוצא (FIFO)</strong>. הכנס חבילות עם <code class="font-mono text-cyan-300">q.insert()</code> ושלוף אותן עם <code class="font-mono text-emerald-300">q.remove()</code>.
+                `;
+            } else if (state.difficulty === 'hardcore') {
+                document.getElementById('mission-title').textContent = 'שלב 1 (אתגר על): סינון תור והסרת רעשים (Filter Queue)';
+                document.getElementById('mission-desc').innerHTML = `
+                    התקפת סייבר מחדירה לתור חבילות מזויפות (<code class="text-red-400 font-mono">NOISE-X / NOISE-Y</code>) לצד חבילות אמת!
+                    עליך לבנות אלגוריתם בן 5 שורות המסנן את התור, ולאחר מכן להכניס את 5 החבילות, <strong class="text-emerald-300">לפענח חבילות תקינות</strong>, ו<strong class="text-red-400">להשליך חבילות רעש</strong> מבלי לאבד את סדר התור!
+                `;
+            } else {
+                document.getElementById('mission-title').textContent = 'שלב 1: פתיחת הפקק ברשת בעזרת תור (Queue<Packet>)';
+                document.getElementById('mission-desc').innerHTML = `
+                    מהרשת מגיע מערך של 4 חבילות מידע (<code class="text-cyan-400 font-mono">Packet[] incoming</code>) שחוסמות את הקו!
+                    כדי לא לאבד אף חבילה, נכניס אותן לתור (<code class="text-cyan-400 font-mono">Queue&lt;Packet&gt;</code>) בשיטת <strong class="text-cyan-300">FIFO (ראשון נכנס – ראשון יוצא)</strong>, ונעבד אותן בזו אחר זו.
+                    <br><span class="text-amber-300 font-semibold">המשימה שלך:</span> סדר/י את 4 שלבי האלגוריתם ב-Java, ואז הפעל/י את התור בזמן אמת!
+                `;
+            }
+
+            renderQueueVisualizer();
+            renderStackVisualizer([]);
+
+            renderLevel1Deck();
+            updateLevel1CodeDisplay();
+            logConsole(`Sector 01 loaded [${cfg.id.toUpperCase()}]. Packets in stream: ${state.incomingPackets.length}.`);
+        }
+
+        function updateLevel1CodeDisplay() {
+            const codeEl = document.getElementById('code-display');
+            if (state.lvl1CodeStep === 0) {
+                const lines = state.selectedCodeLines.map(b => b.code).join('\n');
+                const targetCount = DIFFICULTY_CONFIG[state.difficulty].codeBlocks.length;
+                codeEl.innerHTML = `<span class="text-slate-500">// הרכב את האלגוריתם (${state.selectedCodeLines.length}/${targetCount} שורות):</span>\n` + 
+                    (lines ? `<span class="text-cyan-300">${lines}</span>` : `<span class="text-slate-600">// לחץ על בלוקי הקוד למעלה לפי סדר הביצוע...</span>`);
+            } else if (state.difficulty === 'hardcore') {
+                codeEl.innerHTML = `<span class="text-pink-400">// אתגר סינון תור (Filter Queue) פעיל:</span>
+public static Queue&lt;Packet&gt; filterBuffer(Queue&lt;Packet&gt; q) {
+    Queue&lt;Packet&gt; validQ = new Queue&lt;Packet&gt;();
+    <span class="text-amber-300">while (!q.isEmpty()) {</span>
+        <span class="text-cyan-300">Packet p = q.remove();</span> <span class="text-slate-400">// שליפה מראש התור</span>
+        <span class="text-emerald-300">if (!p.isNoise()) { decrypt(p); validQ.insert(p); }</span>
+    }
+    return validQ;
+}`;
+            } else {
+                codeEl.innerHTML = `<span class="text-emerald-400">// צינור העיבוד פעיל! בצע q.insert() ו-q.remove():</span>
+public static void clearBuffer(Packet[] incoming) {
+    Queue&lt;Packet&gt; q = new Queue&lt;Packet&gt;();
+    <span class="text-cyan-300">for (Packet pkt : incoming) q.insert(pkt);</span> <span class="text-slate-400">// הכנסת כל חבילה לסוף התור</span>
+
+    <span class="text-amber-300">while (!q.isEmpty()) {</span>
+        <span class="text-emerald-300">Packet p = q.remove();</span> <span class="text-slate-400">// שליפת החבילה שבראש התור למשתנה עזר p</span>
+        <span class="text-emerald-300">decrypt(p);</span>            <span class="text-slate-400">// פיענוח החבילה לפני ש-p מתפנה לחבילה הבאה</span>
+    }
+}`;
+            }
+        }
+
+        function renderLevel1Deck() {
+            const deck = document.getElementById('control-deck');
+            const cfg = DIFFICULTY_CONFIG[state.difficulty];
+            if (state.lvl1CodeStep === 0) {
+                const blocks = cfg.codeBlocks;
+                // Deterministic shuffle based on length
+                const shuffled = blocks.length === 5 
+                    ? [blocks[2], blocks[0], blocks[4], blocks[1], blocks[3]]
+                    : [blocks[2], blocks[0], blocks[3], blocks[1]];
+                deck.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-cyan-300 text-sm sm:text-base">
+                            <i class="fa-solid fa-code ml-1.5"></i>משימה 1א: סדר את אלגוריתם ניהול התור (${blocks.length} שורות)
+                        </h3>
+                        <button onclick="resetLvl1Code()" class="text-xs text-slate-400 hover:text-white underline">נקה בחירה</button>
+                    </div>
+                    <div class="grid grid-cols-1 gap-2.5" dir="ltr">
+                        ${shuffled.map(item => {
+                            const isSelected = state.selectedCodeLines.some(s => s.id === item.id);
+                            return `
+                                <button onclick="selectLvl1Code('${item.id}')" ${isSelected ? 'disabled' : ''} 
+                                    class="p-3 rounded-xl border text-left font-mono text-xs sm:text-sm transition-all flex items-center justify-between
+                                    ${isSelected ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-400 opacity-60' : 'bg-slate-900/90 border-slate-700 hover:border-cyan-400 text-slate-200'}">
+                                    <span>${item.code}</span>
+                                    <span class="text-[11px] font-sans text-slate-400" dir="rtl">${item.hint}</span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                const totalHandled = state.processedPackets.length + state.discardedNoise;
+                const nextIdx = state.queue.length + totalHandled;
+                const nextIncoming = state.incomingPackets[nextIdx];
+                const remainingIncoming = state.incomingPackets.slice(nextIdx);
+                const headPkt = state.queue[0];
+
+                // Guided hint for support mode
+                const suggestInsert = state.difficulty === 'support' && state.queue.length === 0 && nextIncoming;
+                const suggestRemove = state.difficulty === 'support' && state.queue.length > 0;
+
+                if (state.difficulty === 'hardcore') {
+                    deck.innerHTML = `
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <h3 class="font-bold text-pink-300 text-sm sm:text-base">
+                                <i class="fa-solid fa-filter ml-1.5"></i>משימה 1ב: סנן את התור (טופלו: ${totalHandled}/${state.incomingPackets.length})
+                            </h3>
+                            <span class="text-xs font-mono text-cyan-300 bg-slate-900 px-2.5 py-1 rounded border border-slate-700" dir="ltr">
+                                incoming: [${remainingIncoming.length ? remainingIncoming.map(p => p.id).join(', ') : 'EMPTY'}]
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <button onclick="lvl1PutPacket()" ${!nextIncoming ? 'disabled' : ''}
+                                class="p-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex flex-col items-center justify-center gap-1 border
+                                ${nextIncoming ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 hover:bg-cyan-500/30 glow-cyan' : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'}">
+                                <span class="font-mono text-sm" dir="ltr">q.insert(${nextIncoming ? nextIncoming.id : 'null'})</span>
+                                <span class="text-[11px] font-normal text-slate-300">הכנס חבילה לתור</span>
+                            </button>
+
+                            <button onclick="lvl1GetPacket(false)" ${!headPkt ? 'disabled' : ''}
+                                class="p-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex flex-col items-center justify-center gap-1 border
+                                ${headPkt ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 hover:bg-emerald-500/30 glow-emerald' : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'}">
+                                <span class="font-mono text-sm" dir="ltr">decrypt & validQ.insert()</span>
+                                <span class="text-[11px] font-normal text-slate-300">פענח ושמור (חבילה תקינה)</span>
+                            </button>
+
+                            <button onclick="lvl1GetPacket(true)" ${!headPkt ? 'disabled' : ''}
+                                class="p-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex flex-col items-center justify-center gap-1 border
+                                ${headPkt ? 'bg-red-500/20 border-red-400 text-red-200 hover:bg-red-500/30' : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'}">
+                                <span class="font-mono text-sm" dir="ltr">if (p.isNoise()) drop()</span>
+                                <span class="text-[11px] font-normal text-slate-300">השלך חבילה (זיהוי NOISE)</span>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    deck.innerHTML = `
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <h3 class="font-bold text-emerald-300 text-sm sm:text-base">
+                                <i class="fa-solid fa-gears ml-1.5"></i>משימה 1ב: הפעל את התור (פוענחו: ${state.processedPackets.length}/${state.incomingPackets.length})
+                            </h3>
+                            <span class="text-xs font-mono text-cyan-300 bg-slate-900 px-2.5 py-1 rounded border border-slate-700" dir="ltr">
+                                incoming: [${remainingIncoming.length ? remainingIncoming.map(p => p.id).join(', ') : 'EMPTY'}]
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button onclick="lvl1PutPacket()" ${!nextIncoming ? 'disabled' : ''}
+                                class="p-4 rounded-xl font-bold text-sm transition-all flex flex-col items-center justify-center gap-1 border relative
+                                ${nextIncoming ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 hover:bg-cyan-500/30 glow-cyan' : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'}
+                                ${suggestInsert ? 'ring-2 ring-amber-400 animate-pulse' : ''}">
+                                ${suggestInsert ? '<span class="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded-full mb-1">הצעד המומלץ הבא</span>' : ''}
+                                <span class="font-mono text-base" dir="ltr">q.insert(${nextIncoming ? nextIncoming.id : 'null'})</span>
+                                <span class="text-xs font-normal text-slate-300">קלוט חבילה מ-incoming והכנס לסוף התור</span>
+                            </button>
+
+                            <button onclick="lvl1GetPacket(false)" ${state.queue.length === 0 ? 'disabled' : ''}
+                                class="p-4 rounded-xl font-bold text-sm transition-all flex flex-col items-center justify-center gap-1 border relative
+                                ${state.queue.length > 0 ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 hover:bg-emerald-500/30 glow-emerald' : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'}
+                                ${suggestRemove ? 'ring-2 ring-amber-400 animate-pulse' : ''}">
+                                ${suggestRemove ? '<span class="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded-full mb-1">הצעד המומלץ הבא</span>' : ''}
+                                <span class="font-mono text-base" dir="ltr">Packet p = q.remove(); decrypt(p);</span>
+                                <span class="text-xs font-normal text-slate-300">שלוף מראש התור ופצח את החבילה</span>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function selectLvl1Code(id) {
+            const blocks = DIFFICULTY_CONFIG[state.difficulty].codeBlocks;
+            const block = blocks.find(b => b.id === id);
+            const expectedOrder = state.selectedCodeLines.length + 1;
+
+            if (block.order === expectedOrder) {
+                audio.playClick();
+                state.selectedCodeLines.push(block);
+                state.correctActions++;
+                updateScore(50);
+                updateLevel1CodeDisplay();
+                renderLevel1Deck();
+                logConsole(`Code line ${expectedOrder}/${blocks.length} verified: ${block.code.trim()}`, 'success');
+
+                if (state.selectedCodeLines.length === blocks.length) {
+                    audio.playSuccess();
+                    state.lvl1CodeStep = 1;
+                    showBanner('success', 'מצוין! הקוד מורכב כעת. הכנס חבילות לתור (q.insert) ושלוף אותן בסדר FIFO (q.remove).');
+                    updateLevel1CodeDisplay();
+                    renderLevel1Deck();
+                }
+            } else {
+                audio.playError();
+                state.errorCount++;
+                updateScore(-20);
+                loseLife('Syntax/Logic order mismatch');
+                showBanner('error', `סדר שגוי! שלב ${expectedOrder} צריך להיות: "${blocks[expectedOrder - 1].hint}". (איבדת לב אחד)`);
+                logConsole(`Syntax/Logic order mismatch at line ${expectedOrder}.`, 'error');
+            }
+        }
+
+        function resetLvl1Code() {
+            audio.playClick();
+            state.selectedCodeLines = [];
+            updateLevel1CodeDisplay();
+            renderLevel1Deck();
+        }
+
+        function lvl1PutPacket() {
+            const totalHandled = state.processedPackets.length + state.discardedNoise;
+            const idx = state.queue.length + totalHandled;
+            if (idx >= state.incomingPackets.length) return;
+            const pkt = state.incomingPackets[idx];
+            
+            audio.playClick();
+            state.queue.push(pkt);
+            state.correctActions++;
+            updateScore(40);
+            renderQueueVisualizer();
+            renderLevel1Deck();
+            logConsole(`q.insert(${pkt.id}) -> Added to BACK of queue.`);
+        }
+
+        function lvl1GetPacket(dropAsNoise = false) {
+            if (state.queue.length === 0) return;
+            const headPkt = state.queue[0];
+
+            // Hardcore mode validation: check if student properly identified NOISE vs VALID packet
+            if (state.difficulty === 'hardcore') {
+                if (headPkt.isNoise && !dropAsNoise) {
+                    audio.playError();
+                    state.errorCount++;
+                    updateScore(-40);
+                    loseLife('Decrypted corrupt packet');
+                    showBanner('error', `סכנה! החבילה ${headPkt.id} היא חבילת רעש (CORRUPT)! אסור לפענח אותה, יש להשליך אותה עם p.isNoise(). (איבדת לב אחד)`);
+                    logConsole(`SECURITY BREACH: Attempted to decrypt corrupt packet ${headPkt.id}!`, 'error');
+                    return;
+                }
+                if (!headPkt.isNoise && dropAsNoise) {
+                    audio.playError();
+                    state.errorCount++;
+                    updateScore(-40);
+                    loseLife('Dropped valid packet');
+                    showBanner('error', `טעות! החבילה ${headPkt.id} היא חבילה חיונית (VALID)! אסור לזרוק אותה. (איבדת לב אחד)`);
+                    logConsole(`DATA LOSS: Attempted to drop valid packet ${headPkt.id}!`, 'error');
+                    return;
+                }
+            }
+
+            const pkt = state.queue.shift(); // Strict FIFO
+            if (dropAsNoise) {
+                state.discardedNoise++;
+                audio.playClick();
+                logConsole(`q.remove() -> Dropped corrupt packet ${pkt.id} (Noise filtered).`, 'warn');
+            } else {
+                state.processedPackets.push(pkt);
+                audio.playSuccess();
+                logConsole(`q.remove() -> Removed ${pkt.id} from HEAD (FIFO). Decrypted!`, 'success');
+            }
+
+            state.correctActions++;
+            updateScore(60);
+            renderQueueVisualizer();
+            renderLevel1Deck();
+
+            const totalHandled = state.processedPackets.length + state.discardedNoise;
+            if (totalHandled === state.incomingPackets.length) {
+                audio.playLevelUp();
+                if (!state.unlockedLevels.includes(2)) state.unlockedLevels.push(2);
+                updateNavPills();
+                showBanner('success', 'כל החבילות עובדו בהצלחה בסדר FIFO! שלב 2 נפתח: מחסנית הקריאות.');
+                
+                const deck = document.getElementById('control-deck');
+                deck.innerHTML = `
+                    <div class="text-center py-4">
+                        <h3 class="text-xl font-black text-emerald-400 mb-2">חוצץ הרשת מיושר לחלוטין!</h3>
+                        <p class="text-sm text-slate-300 mb-4">הבנת היטב כיצד מחלקת <code class="font-mono text-cyan-300">Queue&lt;T&gt;</code> שומרת על סדר הגעה קפדני.</p>
+                        <button onclick="switchLevel(2)" class="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black transition-all glow-cyan">
+                            המשך לשלב 2: צלילה לליבת הזיכרון <i class="fa-solid fa-arrow-left mr-1.5"></i>
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // ------------------------------------------
+        // LEVEL 2: DEEP MEMORY DESCENT (CALL STACK PUSH)
+        // ------------------------------------------
+        function setupLevel2() {
+            const cfg = DIFFICULTY_CONFIG[state.difficulty];
+            state.maxSafeDepth = cfg.maxDepth;
+            state.targetN = cfg.maxDepth;
+
+            document.getElementById('level-badge').textContent = `שלב 2 // מחסנית קריאות [${cfg.shortLabel}]`;
+            document.getElementById('step-indicator').textContent = 'משימה 2 מתוך 3';
+            document.getElementById('mission-title').textContent = `שלב 2: צלילה רקורסיבית לעומק ${cfg.maxDepth} (Call Stack)`;
+            
+            const baseCond = state.difficulty === 'hardcore' ? 'n <= 1' : 'n == 1';
+            document.getElementById('mission-desc').innerHTML = `
+                הצלחנו להיכנס! כעת צריך להגיע לכספת שנמצאת בעומק <strong>${cfg.maxDepth}</strong> של הזיכרון. בכל פעם שהפעולה הרקורסיבית <code class="text-pink-400 font-mono">decryptCore(int n)</code> מזמנת את עצמה, נפתחת מסגרת חדשה במחסנית (<strong class="text-pink-300">Stack / Call Stack</strong>).
+                <br><span class="text-amber-300 font-bold">שימו לב:</span> כשמגיעים לקומה התחתונה (<code class="font-mono">${baseCond}</code>), חובה לעצור בעזרת <strong class="text-amber-300">תנאי העצירה (Base Case)</strong> — אחרת הזיכרון יקרוס (<code class="text-red-400 font-mono">StackOverflowError</code>)!
+            `;
+
+            state.stackFrames = [
+                { funcName: `decryptCore(${cfg.maxDepth})`, localVar: `int n = ${cfg.maxDepth}`, retAddr: '0x04A0', depth: 1, isBaseCase: false }
+            ];
+            renderStackVisualizer(state.stackFrames);
+            updateLevel2CodeDisplay();
+            renderLevel2Deck();
+            logConsole(`Sector 02 initialized [${cfg.id.toUpperCase()}]. Initial frame decryptCore(${cfg.maxDepth}) pushed.`);
+        }
+
+        function updateLevel2CodeDisplay() {
+            const top = state.stackFrames[state.stackFrames.length - 1];
+            const currentN = top ? (state.maxSafeDepth + 1 - top.depth) : state.maxSafeDepth;
+            const baseCond = state.difficulty === 'hardcore' ? 'n <= 1' : 'n == 1';
+            const recFormula = state.difficulty === 'hardcore' ? 'return n * 2 + decryptCore(n - 1);' : 'return n * decryptCore(n - 1);';
+
+            document.getElementById('code-display').innerHTML = `public static int decryptCore(int n) {
+    <span class="text-slate-400">// מצב נוכחי: קריאה בעומק ${top ? top.depth : 1}, פרמטר n = ${currentN}</span>
+    <span class="${currentN === 1 ? 'text-amber-300 font-bold bg-amber-500/20 px-1 rounded' : 'text-pink-300'}">if (${baseCond})                    // תנאי עצירה (Base Case)</span>
+        <span class="text-emerald-400">return 1;</span>
+    
+    <span class="${currentN > 1 ? 'text-cyan-300 font-bold' : 'text-red-400'}">${recFormula} // זימון רקורסיבי (Push)</span>
+}`;
+        }
+
+        function renderLevel2Deck() {
+            const top = state.stackFrames[state.stackFrames.length - 1];
+            const currentN = state.maxSafeDepth + 1 - top.depth;
+            const deck = document.getElementById('control-deck');
+            const baseCond = state.difficulty === 'hardcore' ? 'n <= 1' : 'n == 1';
+
+            const guidedHintHtml = state.difficulty === 'support' ? `
+                <div class="mb-3 p-2.5 rounded-xl bg-amber-950/50 border border-amber-500/40 text-xs text-amber-200 flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                    <span><strong>רמז לחשיבה:</strong> בדוק את הערך של <code class="font-mono text-white">n</code> כרגע (<code class="font-mono text-cyan-300">n = ${currentN}</code>). האם הוא כבר שווה ל-<code class="font-mono text-white">1</code> (תנאי העצירה), או שעדיין גדול ממנו?</span>
+                </div>
+            ` : '';
+
+            deck.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-pink-300 text-sm sm:text-base">
+                        <i class="fa-solid fa-microchip ml-1.5"></i>פעולת מעבד נוכחית: <code class="font-mono text-white" dir="ltr">decryptCore(${currentN})</code>
+                    </h3>
+                    <span class="text-xs font-mono bg-slate-800 px-2.5 py-1 rounded text-pink-300">עומק מחסנית: ${top.depth} / ${state.maxSafeDepth}</span>
+                </div>
+                ${guidedHintHtml}
+                <p class="text-xs text-slate-300 mb-4">
+                    האם תנאי העצירה (<code class="font-mono text-amber-300">${baseCond}</code>) מתקיים כעת, או שיש להמשיך להעמיק ברקורסיה?
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button onclick="lvl2RecursivePush()" 
+                        class="p-4 rounded-xl bg-pink-500/20 border border-pink-400 hover:bg-pink-500/30 text-pink-200 font-bold text-sm transition-all flex flex-col items-center gap-1 glow-magenta">
+                        <span class="font-mono text-base" dir="ltr">Push: decryptCore(${currentN - 1})</span>
+                        <span class="text-xs font-normal text-slate-300">המשך זימון רקורסיבי (דחוף למחסנית)</span>
+                    </button>
+
+                    <button onclick="lvl2TriggerBaseCase()" 
+                        class="p-4 rounded-xl bg-amber-500/20 border border-amber-400 hover:bg-amber-500/30 text-amber-200 font-bold text-sm transition-all flex flex-col items-center gap-1">
+                        <span class="font-mono text-base" dir="ltr">if (${baseCond}) return 1;</span>
+                        <span class="text-xs font-normal text-slate-300">הפעל תנאי עצירה והתחל קיפול</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function lvl2RecursivePush() {
+            const currentDepth = state.stackFrames.length;
+            const currentN = state.maxSafeDepth + 1 - currentDepth;
+
+            // If already at maxSafeDepth (n == 1), pushing again causes STACK OVERFLOW!
+            if (currentDepth >= state.maxSafeDepth) {
+                audio.playError();
+                state.errorCount++;
+                state.overflowCount++;
+                updateScore(-80);
+                loseLife('StackOverflowError');
+                
+                const stackCard = document.getElementById('stack-visualizer-card');
+                stackCard.classList.add('animate-shake', 'border-red-500');
+                setTimeout(() => stackCard.classList.remove('animate-shake', 'border-red-500'), 600);
+
+                showBanner('error', `CRITICAL ERROR: java.lang.StackOverflowError! ניסית לזמן את decryptCore(0) מבלי לעצור ב-Base Case (n == 1)! (איבדת לב אחד)`);
+                logConsole(`CRITICAL ERROR: java.lang.StackOverflowError! Memory limit exceeded at depth ${currentDepth + 1}.`, 'error');
+                return;
+            }
+
+            audio.playClick();
+            const nextDepth = currentDepth + 1;
+            const nextN = state.maxSafeDepth + 1 - nextDepth;
+            const retAddresses = ['0x04A0', '0x04B4', '0x04C8', '0x04DC', '0x04F0'];
+
+            state.stackFrames.push({
+                funcName: `decryptCore(${nextN})`,
+                localVar: `int n = ${nextN}`,
+                retAddr: retAddresses[nextDepth - 1] || '0x04FF',
+                depth: nextDepth,
+                isBaseCase: nextN === 1
+            });
+
+            state.correctActions++;
+            updateScore(60);
+            renderStackVisualizer(state.stackFrames);
+            updateLevel2CodeDisplay();
+            renderLevel2Deck();
+            logConsole(`PUSH Frame: decryptCore(${nextN}) pushed to Call Stack (Depth ${nextDepth}).`);
+        }
+
+        function lvl2TriggerBaseCase() {
+            const currentDepth = state.stackFrames.length;
+            const currentN = state.maxSafeDepth + 1 - currentDepth;
+
+            if (currentN !== 1) {
+                audio.playError();
+                state.errorCount++;
+                updateScore(-30);
+                loseLife('Premature Base Case');
+                showBanner('error', `עצירה מוקדמת מדי! הערך הנוכחי הוא n = ${currentN}, אך תנאי העצירה דורש n == 1. (איבדת לב אחד)`);
+                logConsole(`Premature Base Case triggered at n=${currentN}. Condition (n == 1) is false.`, 'warn');
+                return;
+            }
+
+            // Valid Base Case!
+            audio.playLevelUp();
+            state.baseCaseIdentified = true;
+            state.correctActions++;
+            updateScore(150);
+            if (!state.unlockedLevels.includes(3)) state.unlockedLevels.push(3);
+            updateNavPills();
+            updateTeacherStats();
+
+            showBanner('success', `בינגו! תנאי העצירה (n == 1) זוהה בעומק ${state.maxSafeDepth}! המחסנית מוכנה כעת לשלב 3: קיפול והחזרת ערכים.`);
+            logConsole(`BASE CASE REACHED at depth ${state.maxSafeDepth} (n == 1). Returning 1. Ready for Stack Unwinding!`, 'success');
+
+            const deck = document.getElementById('control-deck');
+            deck.innerHTML = `
+                <div class="text-center py-4">
+                    <h3 class="text-xl font-black text-amber-300 mb-2">תנאי העצירה (Base Case) ננעל בהצלחה!</h3>
+                    <p class="text-sm text-slate-300 mb-4">מנענו גלישת מחסנית (<code class="font-mono text-pink-300">StackOverflowError</code>). כעת עלינו לקפל את המחסנית בסדר LIFO ולחשב את ערך ההחזרה הסופי.</p>
+                    <button onclick="switchLevel(3)" class="px-6 py-3 rounded-xl bg-pink-500 hover:bg-pink-400 text-slate-950 font-black transition-all glow-magenta">
+                        המשך לשלב 3: קיפול מחסנית (Unwinding) <i class="fa-solid fa-arrow-left mr-1.5"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        // ------------------------------------------
+        // LEVEL 3: CORE UNWINDING & RETURN VALUES (STACK POP)
+        // ------------------------------------------
+        function buildUnwindFramesForDifficulty() {
+            const retAddresses = ['0x04A0', '0x04B4', '0x04C8', '0x04DC', '0x04F0'];
+            const maxD = state.maxSafeDepth;
+            const isHard = state.difficulty === 'hardcore';
+            const frames = [];
+
+            // Compute expected values bottom-up (from n=1 up to n=maxD)
+            const expectedMap = { 1: 1 };
+            for (let n = 2; n <= maxD; n++) {
+                expectedMap[n] = isHard ? (n * 2 + expectedMap[n - 1]) : (n * expectedMap[n - 1]);
+            }
+
+            // Push frames top-down (n=maxD down to n=1)
+            for (let d = 1; d <= maxD; d++) {
+                const n = maxD + 1 - d;
+                const expr = n === 1
+                    ? 'Base Case -> 1'
+                    : isHard
+                        ? `${n} * 2 + decryptCore(${n - 1}) [${n * 2} + ${expectedMap[n - 1]}]`
+                        : `${n} * decryptCore(${n - 1}) [${n} * ${expectedMap[n - 1]}]`;
+
+                frames.push({
+                    funcName: `decryptCore(${n})`,
+                    localVar: `int n = ${n}`,
+                    retAddr: retAddresses[d - 1],
+                    depth: d,
+                    expression: expr,
+                    returnVal: n === 1 ? 1 : null,
+                    expectedReturn: expectedMap[n],
+                    isBaseCase: n === 1
+                });
+            }
+            return frames;
+        }
+
+        function setupLevel3() {
+            const cfg = DIFFICULTY_CONFIG[state.difficulty];
+            state.unwindFrames = buildUnwindFramesForDifficulty();
+            const finalKey = state.unwindFrames[0].expectedReturn;
+
+            document.getElementById('level-badge').textContent = `שלב 3 // קיפול וערכי החזרה [${cfg.shortLabel}]`;
+            document.getElementById('step-indicator').textContent = 'משימה 3 מתוך 3';
+            document.getElementById('mission-title').textContent = 'שלב 3: עלייה חזרה והרכבת קוד השחרור (LIFO)';
+            document.getElementById('mission-desc').innerHTML = `
+                הגענו לתחתית ומצאנו את המספר הראשון (<code class="font-mono text-amber-300">1</code>)! עכשיו המחסנית מתקפלת מלמעלה למטה (<strong class="text-pink-300">LIFO: אחרון שנכנס יוצא ראשון</strong>).
+                <br><span class="text-emerald-300 font-semibold">המשימה שלך:</span> בכל שלב, חשב/י את התוצאה של הקומה העליונה והחזר/י אותה (<code class="font-mono">return</code>) לקומה שמעליה, עד שנקבל את הקוד הסופי (<code class="font-mono text-cyan-300">${finalKey}</code>) ונשחרר את הצוות!
+            `;
+
+            renderStackVisualizer(state.unwindFrames, true);
+            updateLevel3CodeDisplay();
+            renderLevel3Deck();
+            logConsole(`Sector 03 initialized [${cfg.id.toUpperCase()}]. Target final key: ${finalKey}.`);
+        }
+
+        function updateLevel3CodeDisplay() {
+            const top = state.unwindFrames[state.unwindFrames.length - 1];
+            const isHard = state.difficulty === 'hardcore';
+            const baseCond = isHard ? 'n <= 1' : 'n == 1';
+            const calcLine = isHard ? 'return n * 2 + subResult;' : 'return n * subResult;';
+
+            document.getElementById('code-display').innerHTML = `<span class="text-emerald-400">// שלב קיפול המחסנית (Unwinding Phase - LIFO):</span>
+public static int decryptCore(int n) {
+    if (${baseCond})
+        return 1;
+    int subResult = decryptCore(n - 1);
+    <span class="text-amber-300 font-bold">${calcLine}</span> <span class="text-slate-400">// ${top ? `Popping ${top.funcName} -> ${top.expectedReturn}` : 'All frames returned to main()!'}</span>
+}`;
+        }
+
+        function renderLevel3Deck() {
+            const deck = document.getElementById('control-deck');
+            if (state.unwindFrames.length === 0) return;
+
+            const top = state.unwindFrames[state.unwindFrames.length - 1];
+            const options = generateReturnOptions(top.expectedReturn);
+            const guidedHintHtml = state.difficulty === 'support' ? `
+                <div class="mb-3 p-2.5 rounded-xl bg-amber-950/50 border border-amber-500/40 text-xs text-amber-200 flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                    <span><strong>רמז לחישוב:</strong> הצב את הערך שחזר מהקומה שמתחת בביטוי למעלה וחשב את המכפלה.</span>
+                </div>
+            ` : '';
+
+            deck.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-emerald-300 text-sm sm:text-base">
+                        <i class="fa-solid fa-arrow-up-from-bracket ml-1.5"></i>קיפול מסגרת עליונה: <code class="font-mono text-white" dir="ltr">${top.funcName}</code>
+                    </h3>
+                    <span class="text-xs font-mono bg-pink-950 text-pink-300 px-2.5 py-1 rounded border border-pink-500/30">
+                        נותרו במחסנית: ${state.unwindFrames.length}
+                    </span>
+                </div>
+                ${guidedHintHtml}
+                <p class="text-xs sm:text-sm text-slate-300 mb-4">
+                    ביטוי חישוב במסגרת זו: <code class="font-mono text-amber-300 bg-slate-900 px-2 py-0.5 rounded" dir="ltr">${top.expression}</code>. 
+                    מהו הערך שיוחזר (<code class="font-mono">return</code>) אל המסגרת שמתחתיה בעת ביצוע <strong>Pop</strong>?
+                </p>
+                <div class="grid grid-cols-3 gap-3" dir="ltr">
+                    ${options.map(val => `
+                        <button onclick="lvl3PopFrame(${val})" 
+                            class="p-3.5 rounded-xl bg-slate-900/90 border-2 border-emerald-500/40 hover:border-emerald-400 hover:bg-emerald-950/50 text-emerald-300 font-mono font-black text-base transition-all flex flex-col items-center">
+                            <span>return ${val};</span>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function generateReturnOptions(correct) {
+            const set = new Set([correct]);
+            while (set.size < 3) {
+                const offset = Math.floor(Math.random() * 6) + 1;
+                const candidate = Math.random() > 0.5 ? correct + offset : Math.max(0, correct - offset);
+                if (candidate !== correct) set.add(candidate);
+            }
+            return Array.from(set).sort((a, b) => a - b);
+        }
+
+        function lvl3PopFrame(selectedVal) {
+            const top = state.unwindFrames[state.unwindFrames.length - 1];
+            if (selectedVal !== top.expectedReturn) {
+                audio.playError();
+                state.errorCount++;
+                updateScore(-25);
+                loseLife('Wrong return value');
+                showBanner('error', `ערך החזרה שגוי עבור ${top.funcName}! בדוק את החישוב: ${top.expression}. (איבדת לב אחד)`);
+                logConsole(`Return value mismatch on ${top.funcName}: got ${selectedVal}, expected ${top.expectedReturn}.`, 'error');
+                return;
+            }
+
+            // Correct Pop!
+            audio.playSuccess();
+            state.correctActions++;
+            updateScore(100);
+            const popped = state.unwindFrames.pop();
+
+            // Propagate return value to the caller frame below
+            if (state.unwindFrames.length > 0) {
+                const caller = state.unwindFrames[state.unwindFrames.length - 1];
+                caller.returnVal = caller.expectedReturn;
+                logConsole(`POP ${popped.funcName} -> Returned ${popped.expectedReturn} to ${caller.funcName}`, 'success');
+            } else {
+                logConsole(`POP ${popped.funcName} -> Final key (${popped.expectedReturn}) returned to main()! CORE UNLOCKED!`, 'success');
+            }
+
+            renderStackVisualizer(state.unwindFrames, true);
+            updateLevel3CodeDisplay();
+
+            if (state.unwindFrames.length === 0) {
+                triggerVictory();
+            } else {
+                hideBanner();
+                renderLevel3Deck();
+            }
+        }
+
+        // ==========================================
+        // 5. VICTORY & MODALS
+        // ==========================================
+        function triggerVictory() {
+            audio.playLevelUp();
+            const totalActions = state.correctActions + state.errorCount;
+            const accuracy = totalActions > 0 ? Math.round((state.correctActions / totalActions) * 100) : 100;
+
+            document.getElementById('final-score').textContent = state.score;
+            document.getElementById('final-overflows').textContent = state.overflowCount;
+            document.getElementById('final-accuracy').textContent = `${accuracy}%`;
+
+            document.getElementById('victory-modal').classList.remove('hidden');
+
+            // Fire Confetti Celebration
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 },
+                    colors: ['#06B6D4', '#EC4899', '#10B981', '#F59E0B']
+                });
+            }
+        }
+
+        function closeVictoryModal() {
+            document.getElementById('victory-modal').classList.add('hidden');
+        }
+
+        function toggleTeacherModal() {
+            audio.playClick();
+            updateTeacherStats();
+            const modal = document.getElementById('teacher-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function resetGame() {
+            audio.playClick();
+            closeVictoryModal();
+            document.getElementById('gameover-modal').classList.add('hidden');
+            hideBanner();
+            state.currentLevel = 1;
+            state.unlockedLevels = [1];
+            state.score = 0;
+            state.lives = state.maxLives;
+            state.correctActions = 0;
+            state.errorCount = 0;
+            state.overflowCount = 0;
+            state.baseCaseIdentified = false;
+            document.getElementById('score-display').textContent = '0';
+            renderLives();
+            document.getElementById('console-log').innerHTML = '<div>> System rebooted. Starting new rescue operation...</div>';
+            updateNavPills();
+            updateTeacherStats();
+            setupLevel1();
+        }
+
+        function startMission() {
+            audio.playLevelUp();
+            document.getElementById('intro-overlay').classList.add('hidden');
+            logConsole('AGENT CONNECTED. Rescue mission initiated at Sector 01.', 'success');
+        }
+
+        function showIntroOverlay() {
+            audio.playClick();
+            document.getElementById('intro-overlay').classList.remove('hidden');
+        }
+
+        // Initialize App on Load
+        window.onload = function() {
+            setDifficulty('standard', true);
+            setupLevel1();
+        };
+    </script>
+</body>
+</html>
